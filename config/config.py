@@ -1,0 +1,3 @@
+MODEL = "gpt-4o"
+
+DEFAULT_WEIGHT = 1.0
