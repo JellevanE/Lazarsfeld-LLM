@@ -1,4 +1,6 @@
+colorama
 numpy
 openai
 python-dotenv
 langchain_core
+pandas

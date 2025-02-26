@@ -2,47 +2,19 @@ from openai import OpenAI
 import numpy as np
 from dotenv import load_dotenv
 from pprint import pprint
-from typing import TypedDict, List, Dict, Any
 import json
+from colorama import init
+from datetime import datetime
+
 
 from config.evaluation_config import SAMPLE_EVALUATION_CONFIG
+from config.config import MODEL, DEFAULT_WEIGHT, MODELS
 
-from config.config import MODEL, DEFAULT_WEIGHT
+from src.concepts import QuestionEval, DimensionEval, ConceptEval, ModelEval, TextEval, Concept
+from src.utils import fancy_print_output
 
 load_dotenv()
-
-class QuestionEval(TypedDict):
-    question: str
-    answer: str
-    score: float  # percentage score from 0 to 1
-    positive_contribution: bool  # if True, higher score is better; if False, lower score is better
-
-class DimensionEval(TypedDict):
-    dimension_description: str
-    questions: List[QuestionEval]
-    overall_score: float # weighted average of question scores
-    weight: float  # importance weight within parent concept (default 1.0)
-
-class ConceptEval(TypedDict):
-    concept_description: str
-    dimensions: List[DimensionEval]
-    overall_score: float # weighted average of dimension scores
-    weight: float  # importance weight within overall evaluation (default 1.0)
-
-class ModelEval(TypedDict):
-    model_name: str
-    concepts: List[ConceptEval]
-    overall_score: float
-    weight: float # importance weight within overall evaluation (default 1.0)
-    # top_logprobs: List[Dict[str, float]]  # logprobs for the model's responses
-
-class TextEval(TypedDict):
-    input_text: str
-    evaluations: Dict[str, ModelEval]  # model_id -> ModelEval mapping for multiple model support
-    aggregated_score: float  # combined score across all models used
-    metadata: Dict[str, Any]  # information about evaluation parameters, etc.
-    timestamp: str  # when evaluation was performed
-
+init(autoreset=True)  # Initialize colorama
 
 # Function to evaluate a single question using LLM
 def evaluate_question(client: OpenAI, system_prompt:str, base_prompt:str, 
@@ -76,10 +48,6 @@ def evaluate_question(client: OpenAI, system_prompt:str, base_prompt:str,
                 token = logprob.token
                 logprob_value = logprob.logprob
                 probability = np.exp(logprob_value)
-
-                # print(f"Token: {token}")
-                # print(f"Logprob: {logprob_value}")
-                # print(f"Probability: {probability}")
                 break # Exit loop after finding the first valid token
 
         elif positive_contribution == False:
@@ -87,10 +55,6 @@ def evaluate_question(client: OpenAI, system_prompt:str, base_prompt:str,
                 token = logprob.token
                 logprob_value = logprob.logprob
                 probability = np.exp(logprob_value)
-
-                # print(f"Token: {token}")
-                # print(f"Logprob: {logprob_value}")
-                # print(f"Probability: {probability}")
                 break # Exit loop after finding the first valid token
 
     return {
@@ -129,7 +93,7 @@ def evaluate_dimension(client: OpenAI, system_prompt:str, base_prompt:str,
 
 # Function to evaluate a single concept using LLM
 def evaluate_concept(client: OpenAI, system_prompt:str, base_prompt:str, 
-                        concept: ConceptEval, input_text: str) -> ConceptEval:
+                        concept: Concept, input_text: str) -> ConceptEval:
     
     dimensions = concept["dimensions"]
     dimension_scores = []
@@ -151,25 +115,93 @@ def evaluate_concept(client: OpenAI, system_prompt:str, base_prompt:str,
     }
 
 
-if __name__ == "__main__":
-    # Initialize OpenAI client
-    test_concepts = []
-    client = OpenAI()
-    for concept in SAMPLE_EVALUATION_CONFIG['concepts']:
-        concept_eval = evaluate_concept(client, 
-                                        system_prompt="You are a helpful assistant.", 
-                                        base_prompt="Evaluate the following text: ",
-                                        concept=concept,
-                                        input_text="Deze tekst is helemaal ruk, maar hopelijk wel super duidelijk. Ennnnn je moeder.")
-        test_concepts.append(concept_eval)
-    pprint(test_concepts)
+def model_eval(client: OpenAI, system_prompt:str, base_prompt:str,
+               concepts: list[Concept], input_text: str) -> ModelEval:
+    
+    concept_scores = []
+    for concept in concepts:
+        concept_eval = evaluate_concept(client, system_prompt, base_prompt, 
+                                        concept, input_text)
+        concept_scores.append(concept_eval)
+    
+    # Calculate overall score for the model, excluding None values
+    scores = [c["overall_score"] for c in concept_scores if c["overall_score"] is not None]
+    overall_score = np.mean(scores) if scores else None  # Default to 0 if all scores are None
 
-    # for dimension in SAMPLE_EVALUATION_CONFIG['concepts'][0]['dimensions']:
-    #     dimension_eval = evaluate_dimension(client, 
-    #                                         system_prompt="You are a helpful assistant.", 
-    #                                         base_prompt="Evaluate the following text: ",
-    #                                         dimension=dimension,
-    #                                         input_text="This is a sample text to evaluate.")
-    #    pprint(dimension_eval)
+    return {
+        "model_name": MODEL,
+        "concepts_scores": concept_scores,
+        "overall_score": overall_score,
+        "weight": DEFAULT_WEIGHT
+    }
+
+
+def text_eval(client: OpenAI, models:list, text:str,
+            concepts:list[Concept], system_prompt:str,
+            base_prompt:str) -> TextEval:
+    
+    evaluations = {}
+    for model in models:
+        model_eval_result = model_eval(client, system_prompt, base_prompt, 
+                                        concepts, text)
+        evaluations[model] = model_eval_result
+
+    # Calculate aggregated score for the text, excluding None values
+    scores = [m["overall_score"] for m in evaluations.values() if m["overall_score"] is not None]
+    aggregated_score = np.mean(scores) if scores else None  # Default to 0 if all scores are None
+
+    metadata = {
+        "models_used": models,
+        "evaluation_parameters": {
+            "system_prompt": system_prompt,
+            "base_prompt": base_prompt
+        }
+    }
+
+    timestamp = datetime.now().strftime("%Y-%m-%d")
+
+
+    return {
+        "input_text": text,
+        "concepts": concepts,
+        "evaluations": evaluations,
+        "aggregated_score": aggregated_score,
+        "metadata": metadata,
+        "timestamp": timestamp
+    }
+
+    
+
+def main(text:str, models:list, concepts:list[Concept]) -> None:
+    """Runs evaluation pipeline and saves results to JSON file."""
+    # Initialize OpenAI client
+    client = OpenAI()
+
+    # Define system and base prompts
+    system_prompt = "You are a helpful assistant."
+    base_prompt = "Evaluate the following text: "
+
+    # Run evaluation
+    text_eval_result = text_eval(client, models, text, concepts, system_prompt, base_prompt)
+
+    # Save results to JSON file
+    with open("evaluation_results/test.json", "w") as f:
+        json.dump(text_eval_result, f, indent=4)
+
+    # Print results to console
+    fancy_print_output(text_eval_result)
+
+    
+
+
+if __name__ == "__main__":
+
+    input_text = "This is an extremely hard text to evaluate. You are unsure if it is good or bad. Is it funny? It might be."
+    
+    main(input_text, 
+         MODELS, 
+         SAMPLE_EVALUATION_CONFIG["concepts"])
+
+
 
 
