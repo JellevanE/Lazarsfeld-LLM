@@ -82,7 +82,7 @@ def evaluate_dimension(client: OpenAI, system_prompt:str, base_prompt:str,
     scores = [q["score"] for q in question_scores if q["score"] is not None]
     overall_score = np.mean(scores) if scores else None  # Default to 0 if all scores are None
 
-
+ 
     return {
         "dimension_description": dimension["dimension_description"],
         "questions": question_scores,
@@ -163,7 +163,6 @@ def text_eval(client: OpenAI, models:list, text:str,
 
     return {
         "input_text": text,
-        "concepts": concepts,
         "evaluations": evaluations,
         "aggregated_score": aggregated_score,
         "metadata": metadata,

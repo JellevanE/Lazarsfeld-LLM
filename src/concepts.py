@@ -43,6 +43,6 @@ class TextEval(TypedDict):
     input_text: str
     concepts: List[Concept]
     evaluations: Dict[str, ModelEval]  # model_id -> ModelEval mapping for multiple model support
-    aggregated_score: float  # combined score across all models used
+   # aggregated_scores: dict{str:float}  # combined score across all models used
     metadata: Dict[str, Any]  # information about evaluation parameters, etc.
     timestamp: str  # when evaluation was performed
