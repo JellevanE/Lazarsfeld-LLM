@@ -1,8 +1,10 @@
 from typing import TypedDict, List, Dict, Any
 
 class Question(TypedDict):
+    label: str
     question: str
     positive_contribution: bool  # if True, higher score is better; if False, lower score is better
+    examples: str
 
 class Dimension(TypedDict):
     dimension_description: str
