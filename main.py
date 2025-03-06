@@ -5,6 +5,8 @@ from pprint import pprint
 import json
 from colorama import init
 from datetime import datetime
+from langchain_core.globals import set_llm_cache
+from langchain_community.cache import SQLiteCache
 
 from config.evaluation_config import EPSON_PRINTER_TEXT, BOL_TAFEL_TEXT
 from config.config import MODEL, DEFAULT_WEIGHT, MODELS
@@ -20,6 +22,8 @@ from prompts.voorbeelden import (
 
 load_dotenv()
 init(autoreset=True)  # Initialize colorama
+set_llm_cache(SQLiteCache(database_path=".langchain.db"))
+
 
 # Function to evaluate a single question using LLM
 def evaluate_question(
@@ -210,7 +214,7 @@ def main(texts:dict, models:list, concepts:list[Concept], output_dir) -> None:
 
 
     # Run evaluation
-    for label, text in texts:
+    for label, text in texts.items():
         text_eval_result = text_eval(client, models, text, concepts)
         # Save results to JSON file
         with open(f"{output_dir}{label}", "w") as f:
@@ -219,7 +223,6 @@ def main(texts:dict, models:list, concepts:list[Concept], output_dir) -> None:
     # Print results to console
     fancy_print_output(text_eval_result)
 
-    
 
 if __name__ == "__main__":
     # load concept from json file
