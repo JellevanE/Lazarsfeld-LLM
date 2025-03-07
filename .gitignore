@@ -1,6 +1,7 @@
 # Additions
 evaluation_results/*
 eval_concepts/*
+*.db
 
 
 # Byte-compiled / optimized / DLL files

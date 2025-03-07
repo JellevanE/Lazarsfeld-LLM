@@ -217,7 +217,7 @@ def main(texts:dict, models:list, concepts:list[Concept], output_dir) -> None:
     for label, text in texts.items():
         text_eval_result = text_eval(client, models, text, concepts)
         # Save results to JSON file
-        with open(f"{output_dir}{label}", "w") as f:
+        with open(f"{output_dir}{label}.json", "w") as f:
             json.dump(text_eval_result, f, indent=4)
 
     # Print results to console
