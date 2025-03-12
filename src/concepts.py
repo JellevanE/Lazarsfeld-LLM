@@ -43,6 +43,7 @@ class ModelEval(TypedDict):
     # top_logprobs: List[Dict[str, float]]  # logprobs for the model's responses
 
 class TextEval(TypedDict):
+    label: str
     input_text: str
     concepts: List[Concept]
     evaluations: Dict[str, ModelEval]  # model_id -> ModelEval mapping for multiple model support

@@ -3,6 +3,7 @@ import numpy as np
 from dotenv import load_dotenv
 from pprint import pprint
 import json
+from pathlib import Path
 from colorama import init
 from datetime import datetime
 from langchain_core.globals import set_llm_cache
@@ -12,6 +13,7 @@ from config.evaluation_config import EPSON_PRINTER_TEXT, BOL_TAFEL_TEXT
 from config.config import MODEL, DEFAULT_WEIGHT, MODELS
 
 from src.concepts import QuestionEval, DimensionEval, ConceptEval, ModelEval, TextEval, Concept, Dimension, Question
+from src.update_concepts import process_concept_csv
 from src.utils import fancy_print_output
 
 from prompts.eval_prompt import sys_eval_prompt, base_eval_prompt
@@ -79,6 +81,7 @@ def evaluate_question(
                 break # Exit loop after finding the first valid token
 
     return {
+        "label": question_obj["label"],
         "question": question,
         "answer": token,
         "score": probability,
@@ -172,7 +175,9 @@ def model_eval(
 
 def text_eval(
         client: OpenAI, 
-        models:list, text:str,
+        models:list, 
+        text:str,
+        label:str,
         concepts:list[Concept],
         ) -> TextEval:
     
@@ -197,6 +202,7 @@ def text_eval(
 
 
     return {
+        "label": label,
         "input_text": text,
         "concepts": concepts,
         "evaluations": evaluations,
@@ -205,7 +211,6 @@ def text_eval(
         "timestamp": timestamp
     }
 
-    
 
 def main(texts:dict, models:list, concepts:list[Concept], output_dir) -> None:
     """Runs evaluation pipeline and saves results to JSON file."""
@@ -215,7 +220,7 @@ def main(texts:dict, models:list, concepts:list[Concept], output_dir) -> None:
 
     # Run evaluation
     for label, text in texts.items():
-        text_eval_result = text_eval(client, models, text, concepts)
+        text_eval_result = text_eval(client, models, text, label, concepts)
         # Save results to JSON file
         with open(f"{output_dir}{label}.json", "w") as f:
             json.dump(text_eval_result, f, indent=4)
@@ -226,6 +231,9 @@ def main(texts:dict, models:list, concepts:list[Concept], output_dir) -> None:
 
 if __name__ == "__main__":
     # load concept from json file
+    csv_path = Path('eval_concepts/LLM_eval_concepten - Taalniveau B1.csv')
+    process_concept_csv(csv_path, output_filepath=Path('eval_concepts/taalniveau_b1_concept.json'), concept_name="Taalniveau_B1")
+
     with open ("eval_concepts/taalniveau_b1_concept.json", "r") as f:
         concepts = json.load(f)
 
