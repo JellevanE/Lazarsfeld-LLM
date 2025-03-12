@@ -1,8 +1,7 @@
-import numpy as np
 import pandas as pd
 import json
 import matplotlib.pyplot as plt
-from concepts import TextEval
+from src.concepts import TextEval
 
 
 def load_evals_dict(texts:list) -> list[TextEval]:

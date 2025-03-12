@@ -3,7 +3,7 @@ import json
 from pathlib import Path
 from collections import defaultdict
 from typing import Dict, List, Tuple, Optional, Any, DefaultDict
-from concepts import Concept, Dimension, Question
+from src.concepts import Concept, Dimension, Question
 
 
 def load_concept_data(csv_filepath: Path) -> pd.DataFrame:
