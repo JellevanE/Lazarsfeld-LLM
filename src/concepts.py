@@ -17,6 +17,7 @@ class Concept(TypedDict):
     weight: float  # importance weight within overall evaluation (default 1.0)
 
 class QuestionEval(TypedDict):
+    label: str
     question: str
     answer: str
     score: float  # percentage score from 0 to 1

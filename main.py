@@ -1,3 +1,4 @@
+from concurrent.futures import ThreadPoolExecutor
 from openai import OpenAI
 import numpy as np
 from dotenv import load_dotenv
@@ -10,7 +11,7 @@ from langchain_core.globals import set_llm_cache
 from langchain_community.cache import SQLiteCache
 
 from config.evaluation_config import EPSON_PRINTER_TEXT, BOL_TAFEL_TEXT
-from config.config import MODEL, DEFAULT_WEIGHT, MODELS
+from config.config import DEFAULT_WEIGHT, MODELS, MAX_WORKERS
 
 from src.concepts import QuestionEval, DimensionEval, ConceptEval, ModelEval, TextEval, Concept, Dimension, Question
 from src.update_concepts import process_concept_csv
@@ -30,8 +31,9 @@ set_llm_cache(SQLiteCache(database_path=".langchain.db"))
 # Function to evaluate a single question using LLM
 def evaluate_question(
         client: OpenAI, 
-        concept:Concept, 
-        dimension:Dimension, 
+        model: str, 
+        concept: Concept, 
+        dimension: Dimension, 
         question_obj: Question, 
         input_text: str
         ) -> QuestionEval:
@@ -45,7 +47,7 @@ def evaluate_question(
     base_prompt = base_eval_prompt.format(concept=concept, dimension=dimension, question=question, input_text=input_text, examples=examples)
     
     response = client.chat.completions.create(
-        model=MODEL,
+        model=model,
         messages=[
             {"role": "developer", "content": system_prompt},
             {"role": "user", "content": base_prompt}
@@ -71,14 +73,14 @@ def evaluate_question(
                 token = logprob.token
                 logprob_value = logprob.logprob
                 probability = np.round(np.exp(logprob_value), 3)
-                break # Exit loop after finding the first valid token
+                break  # Exit loop after finding the first valid token
 
         elif positive_contribution == False:
             if token == "false":
                 token = logprob.token
                 logprob_value = logprob.logprob
                 probability = 1 - np.round(np.exp(logprob_value), 3)
-                break # Exit loop after finding the first valid token
+                break  # Exit loop after finding the first valid token
 
     return {
         "label": question_obj["label"],
@@ -93,25 +95,23 @@ def evaluate_question(
 # Function to evaluate a single dimension using LLM
 def evaluate_dimension(
         client: OpenAI, 
-        concept:Concept, 
+        model: str,  # Accept model as an argument
+        concept: Concept, 
         dimension: Dimension, 
         input_text: str
         ) -> DimensionEval:
-    
-    print(f"Evaluating dimension: {dimension['dimension_description']}")
     
     questions = dimension["questions"]
     question_scores = []
 
     for question in questions:
-        question_eval = evaluate_question(client, concept, dimension, question, input_text)
+        question_eval = evaluate_question(client, model, concept, dimension, question, input_text)
         question_scores.append(question_eval)
 
     # Calculate overall score for the dimension, excluding None values
     scores = [q["score"] for q in question_scores if q["score"] is not None]
     overall_score = np.round(np.mean(scores) if scores else None, 3)  # Default to 0 if all scores are None
 
- 
     return {
         "dimension_description": dimension["dimension_description"],
         "questions": question_scores,
@@ -123,17 +123,16 @@ def evaluate_dimension(
 # Function to evaluate a single concept using LLM
 def evaluate_concept(
         client: OpenAI,
+        model: str, 
         concept: Concept, 
         input_text: str
         ) -> ConceptEval:
-    
-    print(f"\nEvaluating concept: {concept['concept_description']}")
     
     dimensions = concept["dimensions"]
     dimension_scores = []
 
     for dimension in dimensions:
-        dimension_eval = evaluate_dimension(client, concept, dimension, input_text)
+        dimension_eval = evaluate_dimension(client, model, concept, dimension, input_text)
         dimension_scores.append(dimension_eval)
 
     # Calculate overall score for the concept, excluding None values
@@ -149,16 +148,19 @@ def evaluate_concept(
 
 
 def model_eval(
-        client: OpenAI, 
+        model: str, 
         concepts: list[Concept], 
-        input_text: str
+        input_text: str,
+        label:str
         ) -> ModelEval:
     
-    print(f"\nEvaluating using model: {MODEL}")
+    # Initialize OpenAI client
+    client = OpenAI()
+    print(f"\nEvaluating text: {label} \nUsing model: {model}\n\n")
     
     concept_scores = []
     for concept in concepts:
-        concept_eval = evaluate_concept(client, concept, input_text)
+        concept_eval = evaluate_concept(client, model, concept, input_text)
         concept_scores.append(concept_eval)
     
     # Calculate overall score for the model, excluding None values
@@ -166,28 +168,34 @@ def model_eval(
     overall_score = np.round(np.mean(scores) if scores else None, 3)  # Default to 0 if all scores are None
 
     return {
-        "model_name": MODEL,
+        "model_name": model,
         "concepts_scores": concept_scores,
         "overall_score": overall_score,
         "weight": DEFAULT_WEIGHT
     }
 
 
-def text_eval(
-        client: OpenAI, 
-        models:list, 
+def text_eval( 
+        models:list[str], 
         text:str,
         label:str,
         concepts:list[Concept],
         ) -> TextEval:
     
     evaluations = {}
-    for model in models:
-        model_eval_result = model_eval(client, concepts, text)
-        evaluations[model] = model_eval_result
+    # Evaluate the text using each model using threads
+    with ThreadPoolExecutor(max_workers=len(models)) as executor:
+        futures = {executor.submit(model_eval, model, concepts, text, label): model for model in models}
+        for future in futures:
+            model = futures[future]
+            try:
+                evaluations[model] = future.result()
+            except Exception as e:
+                print(f"Error evaluating model {model}: {e}")
+                evaluations[model] = None  # Handle errors gracefully
 
     # Calculate aggregated score for the text, excluding None values
-    scores = [m["overall_score"] for m in evaluations.values() if m["overall_score"] is not None]
+    scores = [m["overall_score"] for m in evaluations.values() if m and m["overall_score"] is not None]
     aggregated_score = np.round(np.mean(scores) if scores else None, 3)  # Default to 0 if all scores are None
 
     metadata = {
@@ -214,13 +222,10 @@ def text_eval(
 
 def main(texts:dict, models:list, concepts:list[Concept], output_dir) -> None:
     """Runs evaluation pipeline and saves results to JSON file."""
-    # Initialize OpenAI client
-    client = OpenAI()
-
 
     # Run evaluation
     for label, text in texts.items():
-        text_eval_result = text_eval(client, models, text, label, concepts)
+        text_eval_result = text_eval(models, text, label, concepts)
         # Save results to JSON file
         with open(f"{output_dir}{label}.json", "w") as f:
             json.dump(text_eval_result, f, indent=4)
