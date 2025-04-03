@@ -1,111 +1,115 @@
-from concurrent.futures import ThreadPoolExecutor
-from openai import OpenAI
+import os
+import pickle
 import numpy as np
-from dotenv import load_dotenv
-from pprint import pprint
 import json
 from pathlib import Path
-from colorama import init
 from datetime import datetime
-from langchain_core.globals import set_llm_cache
-from langchain_community.cache import SQLiteCache
 
-from config.evaluation_config import EPSON_PRINTER_TEXT, BOL_TAFEL_TEXT
-from config.config import DEFAULT_WEIGHT, MODELS, MAX_WORKERS
+from google.auth.transport.requests import Request
+from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
 
-from src.concepts import QuestionEval, DimensionEval, ConceptEval, ModelEval, TextEval, Concept, Dimension, Question
+from config.config import CREDS, TOKEN_FILE, SCOPES, SHEET_ID, SHEET_NAMES, DEFAULT_WEIGHT
+from config.evaluation_config import BOORMACHINE_ADVICE_TEXT
+
+from src.concepts import QuestionEval, DimensionEval, ConceptEval, TextEval, ModelEval, Concept, Dimension, Question
 from src.update_concepts import process_concept_csv
 from src.utils import fancy_print_output
 
-from prompts.eval_prompt import sys_eval_prompt, base_eval_prompt
-from prompts.voorbeelden import (
-    B1,
-    C1
-    )
 
-load_dotenv()
-init(autoreset=True)  # Initialize colorama
-set_llm_cache(SQLiteCache(database_path=".langchain.db"))
+def authenticate():
+    """Authenticate and return Google API credentials."""
+    creds = None
+
+    # Load previously stored token if available
+    if os.path.exists(TOKEN_FILE):
+        with open(TOKEN_FILE, "rb") as token:
+            creds = pickle.load(token)
+
+    # If no valid credentials, go through OAuth flow
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        else:
+            flow = InstalledAppFlow.from_client_secrets_file(CREDS, SCOPES)
+            creds = flow.run_local_server(port=0)  # Opens a browser for login
+
+        # Save credentials for future use
+        with open(TOKEN_FILE, "wb") as token:
+            pickle.dump(creds, token)
+
+    return creds
+
+
+def load_eval_scores_from_sheet(sheet_id: str, sheet_name: str) -> dict[str:int]:
+    """Loads evaluation scores from a Google Sheet."""
+    creds = authenticate()
+    service = build("sheets", "v4", credentials=creds)
+    sheet = service.spreadsheets()
+
+    # Strip whitespace and handle potential encoding issues
+    sheet_name = sheet_name.strip()
+    range_name =  f"{sheet_name}!A1:I99"  # Adjust range as needed
+
+    result = sheet.values().get(spreadsheetId=sheet_id, range=range_name).execute()
+
+    values = result.get("values", [])
+    if not values:
+        raise ValueError("No data found in the sheet.")
+    
+    # Add data from column Label and Score into dict with label as key and score as value
+    scores = {}
+    for row in values[1:]:
+        if len(row) >= 3:  # Check if the row has at least 3 elements
+            label = row[0]
+            score = row[2]
+            if label and score:
+                scores[label] = int(score)
+        else:
+            print(f"Skipping row due to insufficient elements: {row}")  # Optional: Log the skipped row
+
+    return scores
 
 
 # Function to evaluate a single question using LLM
 def evaluate_question(
-        client: OpenAI, 
-        model: str, 
-        concept: Concept, 
-        dimension: Dimension, 
         question_obj: Question, 
-        input_text: str
+        eval_scores:dict[str:int]
         ) -> QuestionEval:
 
     # Extract question details
     question = question_obj["question"]
     positive_contribution = question_obj["positive_contribution"]
-    examples = question_obj["examples"]
-
-    system_prompt = sys_eval_prompt.format(concept=concept)
-    base_prompt = base_eval_prompt.format(concept=concept, dimension=dimension, question=question, input_text=input_text, examples=examples)
+    if question_obj["positive_contribution"] == True:
+        token = "True"
+        probability = (eval_scores.get(question_obj["label"], None)-1)/4
+    elif question_obj["positive_contribution"] == False:
+        token = "False"
+        probability = 1 - (eval_scores.get(question_obj["label"], None)-1)/4
+    else:
+        token = None
     
-    response = client.chat.completions.create(
-        model=model,
-        messages=[
-            {"role": "developer", "content": system_prompt},
-            {"role": "user", "content": base_prompt}
-        ],
-        logprobs=True,
-        top_logprobs=5
-    )
-
-    top_logprobs = response.choices[0].logprobs.content[0].top_logprobs
-    probability = None  # Initialize probability to None
-    logprob_value = None  # Initialize logprob_value to None
-    token = None
-
-    for logprob in top_logprobs:
-        token = logprob.token.lower()
-
-        # If token is not true or false, assign None to probability
-        if token != "true" and token != "false":
-            continue
-
-        if positive_contribution == True:
-            if token == "true":
-                token = logprob.token
-                logprob_value = logprob.logprob
-                probability = np.round(np.exp(logprob_value), 3)
-                break  # Exit loop after finding the first valid token
-
-        elif positive_contribution == False:
-            if token == "false":
-                token = logprob.token
-                logprob_value = logprob.logprob
-                probability = 1 - np.round(np.exp(logprob_value), 3)
-                break  # Exit loop after finding the first valid token
-
     return {
         "label": question_obj["label"],
         "question": question,
         "answer": token,
         "score": probability,
-        "logprob": logprob_value,
+        "logprob": np.log(probability + 1e-9),
         "positive_contribution": positive_contribution
     }
 
 
 # Function to evaluate a single dimension using LLM
 def evaluate_dimension(
-        client: OpenAI, 
-        model: str,  # Accept model as an argument
-        concept: Concept, 
         dimension: Dimension, 
-        input_text: str
+        eval_scores:dict[str:int]
         ) -> DimensionEval:
     
     questions = dimension["questions"]
     question_scores = []
 
     for question in questions:
-        question_eval = evaluate_question(client, model, concept, dimension, question, input_text)
+        question_eval = evaluate_question(question, eval_scores)
         question_scores.append(question_eval)
 
     # Calculate overall score for the dimension, excluding None values
@@ -122,17 +126,15 @@ def evaluate_dimension(
 
 # Function to evaluate a single concept using LLM
 def evaluate_concept(
-        client: OpenAI,
-        model: str, 
         concept: Concept, 
-        input_text: str
+        eval_scores:dict[str:int]
         ) -> ConceptEval:
     
     dimensions = concept["dimensions"]
     dimension_scores = []
 
     for dimension in dimensions:
-        dimension_eval = evaluate_dimension(client, model, concept, dimension, input_text)
+        dimension_eval = evaluate_dimension(dimension, eval_scores)
         dimension_scores.append(dimension_eval)
 
     # Calculate overall score for the concept, excluding None values
@@ -150,17 +152,16 @@ def evaluate_concept(
 def model_eval(
         model: str, 
         concepts: list[Concept], 
-        input_text: str,
-        label:str
+        label:str,
+        eval_scores:dict[str:int]
         ) -> ModelEval:
     
     # Initialize OpenAI client
-    client = OpenAI()
     print(f"\nEvaluating text: {label} \nUsing model: {model}\n\n")
     
     concept_scores = []
     for concept in concepts:
-        concept_eval = evaluate_concept(client, model, concept, input_text)
+        concept_eval = evaluate_concept(concept, eval_scores)
         concept_scores.append(concept_eval)
     
     # Calculate overall score for the model, excluding None values
@@ -180,19 +181,14 @@ def text_eval(
         text:str,
         label:str,
         concepts:list[Concept],
+        eval_scores:dict[str:int]
         ) -> TextEval:
     
     evaluations = {}
     # Evaluate the text using each model using threads
-    with ThreadPoolExecutor(max_workers=len(models)) as executor:
-        futures = {executor.submit(model_eval, model, concepts, text, label): model for model in models}
-        for future in futures:
-            model = futures[future]
-            try:
-                evaluations[model] = future.result()
-            except Exception as e:
-                print(f"Error evaluating model {model}: {e}")
-                evaluations[model] = None  # Handle errors gracefully
+    for model in models:
+        model_eval_result = model_eval(model, concepts, label, eval_scores)
+        evaluations[model] = model_eval_result
 
     # Calculate aggregated score for the text, excluding None values
     scores = [m["overall_score"] for m in evaluations.values() if m and m["overall_score"] is not None]
@@ -201,8 +197,8 @@ def text_eval(
     metadata = {
         "models_used": models,
         "evaluation_parameters": {
-            "system_prompt": str(sys_eval_prompt),
-            "base_prompt": str(base_eval_prompt)
+            "system_prompt": str("Geef eens score tussen 1 en 5"),
+            "base_prompt": str("Laurence & Lieze")
         }
     }
 
@@ -220,13 +216,13 @@ def text_eval(
     }
 
 
-def main(texts:dict, models:list, concepts:list[Concept], output_dir) -> None:
+def main(texts:dict, models:list, concepts:list[Concept], output_dir, eval_scores:dict) -> None:
     """Runs evaluation pipeline and saves results to JSON file."""
     
     results = []
     # Run evaluation
     for label, text in texts.items():
-        text_eval_result = text_eval(models, text, label, concepts)
+        text_eval_result = text_eval(models, text, label, concepts, eval_scores)
         results.append(text_eval_result)
         print(f"Evaluation for {label} completed.\n")
 
@@ -237,9 +233,11 @@ def main(texts:dict, models:list, concepts:list[Concept], output_dir) -> None:
     # Print results to console
     fancy_print_output(text_eval_result)
 
-
 if __name__ == "__main__":
-    # load concept from json file
+    scores = load_eval_scores_from_sheet(SHEET_ID, SHEET_NAMES[0])
+
+    print(f"Loaded scores from {SHEET_NAMES[0]}: {scores}")
+
     csv_path = Path('eval_concepts/LLM_eval_concepten - Taalniveau B1.csv')
     process_concept_csv(csv_path, output_filepath=Path('eval_concepts/taalniveau_b1_concept.json'), concept_name="Taalniveau_B1")
 
@@ -248,13 +246,10 @@ if __name__ == "__main__":
 
     output_dir = "evaluation_results/"
 
-    texts = {'epson_printer':EPSON_PRINTER_TEXT, 
-             'bol_tafel':BOL_TAFEL_TEXT, 
-             'b1_voorbeeld':B1, 
-             'c1_voorbeeld':C1}
-    models = ["gpt-3.5-turbo-0125", "gpt-4o", "gpt-4-turbo"]
+    texts = {
+        "Boormachine advies_validation": BOORMACHINE_ADVICE_TEXT,
+    }
 
-    main(texts, models, concepts['concepts'], output_dir)
-
-
+    models = ["LL-01-pro"]
+    main(texts, models, concepts['concepts'], output_dir, scores)
 

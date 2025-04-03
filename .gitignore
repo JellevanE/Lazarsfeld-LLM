@@ -2,6 +2,8 @@
 evaluation_results/*
 eval_concepts/*
 *.db
+credentials.json
+token.*
 
 
 # Byte-compiled / optimized / DLL files

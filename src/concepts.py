@@ -21,7 +21,7 @@ class QuestionEval(TypedDict):
     question: str
     answer: str
     score: float  # percentage score from 0 to 1
-    logprob: Optional[float]  # log probability of the answer
+    logprob: Optional[float]  # log probability of the ansœwer
     positive_contribution: bool  # if True, higher score is better; if False, lower score is better
 
 class DimensionEval(TypedDict):
