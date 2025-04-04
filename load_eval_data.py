@@ -12,7 +12,7 @@ from googleapiclient.discovery import build
 from config.config import CREDS, TOKEN_FILE, SCOPES, SHEET_ID, SHEET_NAMES, DEFAULT_WEIGHT
 from config.evaluation_config import BOORMACHINE_ADVICE_TEXT
 
-from src.concepts import QuestionEval, DimensionEval, ConceptEval, TextEval, ModelEval, Concept, Dimension, Question
+from src.concepts import QuestionEval, DimensionEval, ConceptEval, TextEval, ModelEval, Concept, Dimension, Question, ValidationScores
 from src.update_concepts import process_concept_csv
 from src.utils import fancy_print_output
 
@@ -233,11 +233,10 @@ def main(texts:dict, models:list, concepts:list[Concept], output_dir, eval_score
     # Print results to console
     fancy_print_output(text_eval_result)
 
+
+
 if __name__ == "__main__":
-    scores = load_eval_scores_from_sheet(SHEET_ID, SHEET_NAMES[0])
-
-    print(f"Loaded scores from {SHEET_NAMES[0]}: {scores}")
-
+    # Load eval concepts from CSV
     csv_path = Path('eval_concepts/LLM_eval_concepten - Taalniveau B1.csv')
     process_concept_csv(csv_path, output_filepath=Path('eval_concepts/taalniveau_b1_concept.json'), concept_name="Taalniveau_B1")
 
@@ -245,6 +244,12 @@ if __name__ == "__main__":
         concepts = json.load(f)
 
     output_dir = "evaluation_results/"
+
+    # Load evaluation scores from Google Sheets
+    scores = {}
+    for name in SHEET_NAMES:
+        scores[name] = load_eval_scores_from_sheet(SHEET_ID, name)
+    
 
     texts = {
         "Boormachine advies_validation": BOORMACHINE_ADVICE_TEXT,

@@ -51,3 +51,10 @@ class TextEval(TypedDict):
    # aggregated_scores: dict{str:float}  # combined score across all models used
     metadata: Dict[str, Any]  # information about evaluation parameters, etc.
     timestamp: str  # when evaluation was performed
+
+
+class ValidationScores(TypedDict):
+    sheet_name: str
+    scores: dict[str:int]
+    label: str
+    text: str

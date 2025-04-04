@@ -100,16 +100,18 @@ De batterij capaciteit van je iPhone bepaalt deels hoe lang je batterij meegaat.
 De accuduur van een iPhone meten we via het aantal uren dat je offline video's afspeelt. Door dit voor alle iPhone modellen naast elkaar te leggen, vergelijk je de batterijduur op dezelfde manier. Het aantal uren video afspelen varieert van 11 tot 29 uur. Hieronder vind je een overzicht met de batterijduur van verschillende iPhone modellen. iPhone 16 Pro Max heeft op het gebied van het aantal uren video afspelen de beste iPhone batterij.
 
 ### Deze iPhone modellen hebben de beste batterij
-Aantal uren video afspelen
-iPhone 16 Pro Max	33
-iPhone 15 Pro Max / iPhone 14 Pro Max	29
-iPhone 13 Pro Max	28
-iPhone 16 Plus / iPhone 16 Pro	27
-iPhone 16e / iPhone 14 Plus / iPhone 15 Plus	26
-iPhone 15 Pro / iPhone 14 Pro	23
-iPhone 16 / iPhone 13 Pro	22
-iPhone 15 / iPhone 14 / 12 Pro Max / iPhone 11 Pro Max	20
-Alle andere iPhone modellen	Minder dan 20 uur
+
+|                         | Aantal uren video afspelen |
+|-------------------------|-----------------------------|
+| iPhone 16 Pro Max       | 33                          |
+| iPhone 15 Pro Max / iPhone 14 Pro Max | 29                          |
+| iPhone 13 Pro Max       | 28                          |
+| iPhone 16 Plus / iPhone 16 Pro        | 27                          |
+| iPhone 16e / iPhone 14 Plus / iPhone 15 Plus  | 26                          |
+| iPhone 15 Pro / iPhone 14 Pro        | 23                          |
+| iPhone 16 / iPhone 13 Pro           | 22                          |
+| iPhone 15 / iPhone 14 / 12 Pro Max / iPhone 11 Pro Max | 20                          |
+| Alle andere iPhone modellen | Minder dan 20 uur         |
 
 ### Wat is de levensduur van je iPhone batterij?
 Na verloop van tijd slijt de accu van je iPhone. Volgens Apple heb je na 500 keer volledig opladen nog ongeveer 80% van de batterijcapaciteit over. Dit betekent dat je na ongeveer 2 jaar echt gaat merken dat je batterij slijt. De accu van je iPhone gaat dan minder lang mee op één volle lading. De levensduur van de batterij zegt overigens niets over de levensduur van je iPhone. Heb je nu bijvoorbeeld iPhone 12 met een batterijconditie lager dan 80 procent? Als je de batterij laat vervangen, dan gaat het toestel weer even mee.
@@ -117,3 +119,82 @@ Na verloop van tijd slijt de accu van je iPhone. Volgens Apple heb je na 500 kee
 Artikel van:
 Lucinda
 Apple specialist."""
+
+MONITOR_4K_TEXT = """
+## Hoe kies je een 4K Gaming monitor?
+Ben je pc gamer en wil je games op hun allermooist ervaren, dan is een 4K gaming monitor een vereiste. De vraag is alleen: waar moet je op letten bij het kopen van een 4K gaming monitor? Wij vertellen je op welke verversingssnelheid, reactietijd en andere specificaties je moet letten.
+
+[4K gaming monitor kiezen] [Verversingssnelheid] [Reactietijd] [Schermgrootte] [FreeSync en G-Sync] [Voor consoles]
+
+### 4K gaming monitor kiezen
+Om de juiste 4K gaming monitor te kiezen, is het belangrijk om rekening te houden met een aantal zaken.
+
+- Welke verversingssnelheid wil je hebben?
+- Hoe hoog mag de maximale reactietijd zijn?
+- Hoe groot wil je dat het scherm is?
+- Vind je G-Sync of FreeSync ondersteuning belangrijk?
+- Wil je de monitor ook voor een console gebruiken?
+
+### Verversingssnelheid
+Een 4K gaming monitor is iets anders dan een reguliere 4K monitor. Afgezien van de resolutie (3840 x 2160) verschilt een gaming monitor qua belangrijke specificaties. Het aantal hertz, oftewel de verversingssnelheid, is een belangrijke factor. De verversingssnelheid bepaalt hoeveel frames per seconde het beeld ververst. Hoe hoger het aantal hertz, hoe soepeler het beeld oogt. Een 144 hertz monitor ververst aanzienlijk meer beelden dan eentje met 60 hertz. Neem je gamen serieus, kies dan minimaal een 144 hertz monitor.
+
+### Hoe kies je de juiste reactietijd?
+Een andere belangrijke specificatie is de reactietijd. De reactietijd geeft aan hoeveel milliseconden het duurt om een beeld door te geven naar de monitor. Hierbij geldt: hoe lager, hoe beter. Idealiter wil je 1 ms reactietijd, wat het laagst mogelijke is op dit moment. Sommige 4K gaming monitoren hebben echter 3 of 4 ms reactietijd. Ga je games spelen met snelle beelden, kies dan een monitor met 1 ms. Speel je daarnaast andere games, dan is 3 of 4 ms ook prima.
+
+### Hoe kies je de juiste schermgrootte
+4K gaming monitoren zijn er in diverse formaten. Welke schermgrootte bij jou past, is dan ook afhankelijk van je persoonlijke voorkeur. We bevelen minimaal 27 inch en maximaal 32 inch aan qua schermgrootte. Dit formaat is optimaal voor 4K gaming, want met een scherm van deze grootte zie je alles goed. Er zijn ook grotere monitoren van 43 inch, al is dit formaat enkel aan te raden als je wat verder weg zit van het scherm.
+
+### Hoe belangrijk zijn FreeSync en G-Sync?
+FreeSync en G-Sync zijn opties die veel invloed hebben op de beeldweergave van je monitor. Bij deze techniek werkt je videokaart samen met het scherm om zo de beeldverversing op elkaar af te stemmen. Hierdoor heb je minder kans op haperend beeld. Hierbij geldt dat FreeSync met AMD videokaarten werkt en G-Sync met NVIDIA videokaarten. Let op dat vooral G-Sync monitoren prijzig zijn. Wil je de beste weergave hebben tijdens het gamen, dan bevelen wij G-Sync of FreeSync aan.
+
+# 4K gaming monitor voor consoles
+4K gaming monitors zijn niet enkel voor pc gamers bedoeld. Ook console gamers profiteren van een 4K gaming monitor voor bij hun PS4 Pro of Xbox One X. Deze consoles zijn geoptimaliseerd voor 4K gaming. Het is voor consoles vooral belangrijk om op het schermformaat te letten. Verversingssnelheid en FreeSync/G-Sync zijn niet van toepassing op consoles. Kies een kleinere monitor als je dichter op het scherm zit of kies een grotere monitor als je verder van het scherm af zit.
+
+Artikel van:
+Kasper
+Monitoren specialist."""
+
+HIFI_SPEAKER_TEXT = """
+## Hoe kies je een hifi speaker?
+Het uitkiezen van luidsprekers is eenvoudiger dan het lijkt. Er is een aantal vragen die je jezelf kunt stellen om tot een juiste keuze te komen. Deze vragen beantwoorden we hieronder, maar eerst geven we je twee tips die je helpen bij de aanschaf van de beste hifi speakers voor jou.
+
+[Hifi speaker kiezen] [Stereo of surround speakers] [Verschillende speaker types] [Verschillende speaker types] [Beter geluid uit je speakers]
+
+### Hifi speaker kiezen
+Wanneer je op zoek bent naar hifi speakers zijn er een aantal dingen waar je op moet letten. Vraag jezelf het volgende af:
+- Wil je een stereo of surround geluid?
+- Wat voor type speaker wil je in huis?
+- Wil je een nog beter geluid uit je speakers?
+
+### Stereo of surround speakers
+
+#### Stereo speakers voor muziek
+De meeste muziek wordt in stereo opgenomen. Daarom klinkt muziek met 2 stereo speakers natuurgetrouw. Voor het beste stereobeeld plaats je de luidsprekers voorin het luistergebied, enkele meters uitelkaar. De meest gebruikte luidsprekers op deze positie zijn boekenplank speakers of zuilspeakers. Luister je vaak naar muziek met een prominente bas? Overweeg dan ook een subwoofer voor het weergeven van lage tonen.
+
+#### Surround speakers voor film
+Filmgeluid klinkt extra indrukwekkend uit een surround set. Als de luidsprekers goed staan opgesteld, zit je midden in de actie en ervaar je films alsof je in de bioscoop zit. Een surround speakerset bestaat meestal uit 2 front speakers, 1 center speaker, 2 surround speakers en 1 subwoofer.
+
+### Verschillende speaker types
+#### Vloerstaande zuilspeakers
+Zuilspeakers zijn flinke hifi-luidsprekers. Door de grote klankkast hebben deze luidsprekers een voller geluid en geven ze lage tonen beter weer dan boekenplank speakers. Vanwege de grootte en het krachtige geluid zijn zuilspeakers minder geschikt voor kleine ruimtes. Vloerstaande luidsprekers worden meestal gebruikt als front speakers voorin het luistergebied.
+
+#### Boekenplank speakers
+Boekenplank speakers zijn kleiner dan zuilspeakers. Ze nemen minder ruimte in beslag, maar geven lage tonen ook minder goed weer. Vanwege hun formaat zijn boekenplank speakers geschikt voor kleine ruimtes. Als front speakers of rear speakers - op een standaard of aan de muur - komen deze luidsprekers het beste tot hun recht.
+
+#### Satelliet speakers
+Satelliet speakers zijn nog kleiner dan boekenplank speakers. Ze zijn gemakkelijk uit het zicht te zetten of op te hangen. Combineer de satellieten bijvoorbeeld met een subwoofer en maak een compacte surround set. Satelliet speakers zijn geschikt als zij- of achterluidsprekers.
+
+### Verschillende speaker types
+
+#### Center speaker
+De center speaker is gemaakt om spraak bij films en series helder en nauwkeurig weer te geven. Voor of onder je tv vormt de luidspreker het middelpunt van je surround set. De speaker is groter dan de meeste boekenplank speakers en past daarom niet altijd op een klein tv-meubel.
+
+#### Subwoofer
+Een subwoofer is een luidspreker die alleen lage tonen weergeeft. Bij sommige films en muziekstijlen zijn krachtige bassen onmisbaar. De subwoofer geeft de lage frequenties weer die andere speakers niet reproduceren. Subwoofers hebben een ingebouwde versterker, waardoor je zelf de regie hebt over de hoeveelheid bas.
+
+### Beter geluid uit je speakers
+De juiste kabel, luisterhoogte en demping van de trillingen dragen bij aan een betere klank en geluidskwaliteit. In de handleiding van de luidsprekers staat meestal beschreven waar je de speakers het beste kunt neerzetten. Zet boekenplank speakers of satelliet speakers met speakerstandaards op luisterhoogte of hang ze aan de muur met muurbeugels. Speakerdempers ontkoppelen een speaker van de ondergrond en absorberen trillingen, zodat de vloer niet meetrilt.
+
+Artikel van:
+Linde
+Audio specialist."""
