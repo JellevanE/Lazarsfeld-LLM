@@ -4,13 +4,14 @@ import numpy as np
 import json
 from pathlib import Path
 from datetime import datetime
+from pprint import pprint
 
 from google.auth.transport.requests import Request
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 
 from config.config import CREDS, TOKEN_FILE, SCOPES, SHEET_ID, SHEET_NAMES, DEFAULT_WEIGHT
-from config.evaluation_config import BOORMACHINE_ADVICE_TEXT
+from config.evaluation_config import BOORMACHINE_ADVICE_TEXT, BATTERIJDUUR_IPHONE_TEXT, MONITOR_4K_TEXT, HIFI_SPEAKER_TEXT
 
 from src.concepts import QuestionEval, DimensionEval, ConceptEval, TextEval, ModelEval, Concept, Dimension, Question, ValidationScores
 from src.update_concepts import process_concept_csv
@@ -222,12 +223,12 @@ def main(texts:dict, models:list, concepts:list[Concept], output_dir, eval_score
     results = []
     # Run evaluation
     for label, text in texts.items():
-        text_eval_result = text_eval(models, text, label, concepts, eval_scores)
+        text_eval_result = text_eval(models, text, label, concepts, eval_scores[label])
         results.append(text_eval_result)
         print(f"Evaluation for {label} completed.\n")
 
     # Save results to JSON file
-    with open(f"{output_dir}{label}.json", "w") as f:
+    with open(f"{output_dir}validation_data.json", "w") as f:
         json.dump(results, f, indent=4)
 
     # Print results to console
@@ -249,12 +250,16 @@ if __name__ == "__main__":
     scores = {}
     for name in SHEET_NAMES:
         scores[name] = load_eval_scores_from_sheet(SHEET_ID, name)
-    
+
 
     texts = {
-        "Boormachine advies_validation": BOORMACHINE_ADVICE_TEXT,
+        "B1 - Goed voorbeeld 1": BOORMACHINE_ADVICE_TEXT,
+        "B1 - Goed voorbeeld 2": BATTERIJDUUR_IPHONE_TEXT,
+        "B1 - Slecht voorbeeld 1": MONITOR_4K_TEXT,
+        "B1 - Slecht voorbeeld 2": HIFI_SPEAKER_TEXT
     }
 
+    # #### FIX EVAL DATA
     models = ["LL-01-pro"]
     main(texts, models, concepts['concepts'], output_dir, scores)
 

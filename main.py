@@ -10,7 +10,7 @@ from datetime import datetime
 from langchain_core.globals import set_llm_cache
 from langchain_community.cache import SQLiteCache
 
-from config.evaluation_config import EPSON_PRINTER_TEXT, BOL_TAFEL_TEXT
+from config.evaluation_config import BOORMACHINE_ADVICE_TEXT, BATTERIJDUUR_IPHONE_TEXT, MONITOR_4K_TEXT, HIFI_SPEAKER_TEXT
 from config.config import DEFAULT_WEIGHT, MODELS, MAX_WORKERS
 
 from src.concepts import QuestionEval, DimensionEval, ConceptEval, ModelEval, TextEval, Concept, Dimension, Question
@@ -231,7 +231,7 @@ def main(texts:dict, models:list, concepts:list[Concept], output_dir) -> None:
         print(f"Evaluation for {label} completed.\n")
 
     # Save results to JSON file
-    with open(f"{output_dir}{label}.json", "w") as f:
+    with open(f"{output_dir}model_eval_data.json", "w") as f:
         json.dump(results, f, indent=4)
 
     # Print results to console
@@ -248,10 +248,13 @@ if __name__ == "__main__":
 
     output_dir = "evaluation_results/"
 
-    texts = {'epson_printer':EPSON_PRINTER_TEXT, 
-             'bol_tafel':BOL_TAFEL_TEXT, 
-             'b1_voorbeeld':B1, 
-             'c1_voorbeeld':C1}
+    texts = {
+        "B1 - Goed voorbeeld 1": BOORMACHINE_ADVICE_TEXT,
+        "B1 - Goed voorbeeld 2": BATTERIJDUUR_IPHONE_TEXT,
+        "B1 - Slecht voorbeeld 1": MONITOR_4K_TEXT,
+        "B1 - Slecht voorbeeld 2": HIFI_SPEAKER_TEXT
+    }
+
     models = ["gpt-3.5-turbo-0125", "gpt-4o", "gpt-4-turbo"]
 
     main(texts, models, concepts['concepts'], output_dir)
